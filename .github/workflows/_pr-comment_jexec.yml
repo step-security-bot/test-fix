@@ -6,6 +6,9 @@ on:
     workflows: ["JEXEC in translations"]
     types: [completed]
 
+permissions:  # added using https://github.com/step-security/secure-workflows
+  contents: read
+
 jobs:
   comment:
     runs-on: ubuntu-latest
