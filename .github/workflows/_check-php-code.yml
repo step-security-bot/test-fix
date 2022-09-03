@@ -12,6 +12,9 @@ on:
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+permissions:  # added using https://github.com/step-security/secure-workflows
+  contents: read
+
 jobs:
   check-php-code:
     if: (github.repository == 'joomla/core-translations') || (github.repository != 'joomla/core-translations' && github.event_name != 'schedule')
@@ -19,14 +22,19 @@ jobs:
     permissions:
       checks: write
     steps:
-      - uses: haya14busa/action-workflow_run-status@v1
+      - name: Harden Runner
+        uses: step-security/harden-runner@dd2c410b088af7c0dc8046f3ac9a8f4148492a95
+        with:
+          egress-policy: audit # TODO: change to 'egress-policy: block' after couple of runs
+
+      - uses: haya14busa/action-workflow_run-status@967ed83efa565c257675ed70cfe5231f062ddd94
         if: github.event_name == 'workflow_run'
       - name: Checkout Source Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
         with:
           ref: ${{ github.event.pull_request.head.sha }}
 
       - name: PHP Syntax Checker (Lint)
-        uses: StephaneBour/actions-php-lint@7.4
+        uses: StephaneBour/actions-php-lint@45f4aa736599a6e945435567eff5bdd54be3b934
         with:
           dir: '.'
