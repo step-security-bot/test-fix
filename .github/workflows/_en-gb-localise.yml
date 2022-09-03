@@ -10,6 +10,9 @@ on:
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
+permissions:  # added using https://github.com/step-security/secure-workflows
+  contents: read
+
 jobs:
   engb-localise:
     runs-on: ubuntu-latest
@@ -19,10 +22,15 @@ jobs:
       checks: write
 
     steps:
-    - uses: haya14busa/action-workflow_run-status@v1
+    - name: Harden Runner
+      uses: step-security/harden-runner@dd2c410b088af7c0dc8046f3ac9a8f4148492a95
+      with:
+        egress-policy: audit # TODO: change to 'egress-policy: block' after couple of runs
+
+    - uses: haya14busa/action-workflow_run-status@967ed83efa565c257675ed70cfe5231f062ddd94
       if: github.event_name == 'workflow_run'
     - name: Checkout Source Code
-      uses: actions/checkout@v3
+      uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
     - name: Check PR content
       id: build
       run: |
@@ -61,7 +69,7 @@ jobs:
 
     - name: Upload En_GBLocalise-logs
       if: ${{ always() }}
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@82c141cc518b40d92cc801eee768e7aafc9c2fa2
       with:
         name: En_GBLocalise-logs
         path: ./joomla_v4/translations/package/logs
