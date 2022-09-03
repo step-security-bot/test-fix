@@ -12,6 +12,9 @@ on:
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+permissions:  # added using https://github.com/step-security/secure-workflows
+  contents: read
+
 jobs:
   check-php-code:
     if: (github.repository == 'joomla/core-translations') || (github.repository != 'joomla/core-translations' && github.event_name != 'schedule')
