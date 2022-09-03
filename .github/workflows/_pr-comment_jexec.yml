@@ -1,0 +1,35 @@
+name: PR comment JEXEC
+# This workflow is triggered after the linting action is complete
+
+on:
+  workflow_run:
+    workflows: ["JEXEC in translations"]
+    types: [completed]
+
+jobs:
+  comment:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      issues: write
+      actions: write
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    steps:
+      - name: on artifact
+        id: artifact
+        uses: marocchino/on_artifact@v1
+        with:
+          name: JEXEC-logs
+
+      - uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          header: JEXEC ${{ steps.artifact.outputs.pr_number }}
+          number: ${{ steps.artifact.outputs.pr_number }}
+          message: |
+           The following translation files don't contain the JEXEC on ${{ steps.artifact.outputs.pr_sha }}
+            ```
+            ${{ steps.artifact.outputs.jexec_result }}
+            ```
+            Affecting ${{ steps.artifact.outputs.files_affected_jexec }} files in ${{ steps.artifact.outputs.languagepacks_affected_jexec }} language packs.
+

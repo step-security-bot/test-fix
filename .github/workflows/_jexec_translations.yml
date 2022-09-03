@@ -1,0 +1,67 @@
+name: "JEXEC in translations"
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_run:
+    workflows: ["J4 Download Package Translations Crowdin Action"]
+    types: [completed]
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  no-jexec:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+      checks: write
+
+    steps:
+    - uses: haya14busa/action-workflow_run-status@v1
+      if: github.event_name == 'workflow_run'
+    - name: Checkout Source Code
+      uses: actions/checkout@v3
+    - name: Check PR content
+      id: build
+      run: |
+          cd ./joomla_v4/translations/package
+          mkdir ./logs
+          grep -Lr --include \*.php '_JEXEC' | tee ./logs/jexec_result
+          cat ./logs/jexec_result | wc -l | tee ./logs/files_affected_jexec
+          awk -F/ '{ print $1 }' ./logs/jexec_result | sort -u | wc -l | tee ./logs/languagepacks_affected_jexec
+          aflp=$(head -n 1 ./logs/languagepacks_affected_jexec)
+          affi=$(head -n 1 ./logs/files_affected_jexec)
+          echo -n "$aflp" > ./logs/languagepacks_affected_jexec
+          echo -n "$affi" > ./logs/files_affected_jexec
+          cat ./logs/jexec_result
+
+    - name: Save PR number
+      if: ${{ always() }}
+      run: |
+          cd ./joomla_v4/translations/package
+          echo -n ${{ github.event.pull_request.number }} | tee ./logs/pr_number
+          [ -s ./logs/pr_number ] || gh pr list --limit 1 --repo joomla/core-translations --author app/github-actions --state open --json number --jq .[].number > ./logs/pr_number
+          prnumber=$(head -n 1 ./logs/pr_number)
+          echo -n "$prnumber" > ./logs/pr_number
+      env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      
+    - name: Save PR sha
+      if: ${{ always() }}
+      run: echo ${{ github.sha }} | tee ./joomla_v4/translations/package/logs/pr_sha
+
+    - name: fail workflow
+      run: |
+        if [ -f ./joomla_v4/translations/package/logs/jexec_result ]; then
+        exit 1
+        fi
+
+
+    - name: JEXEC-logs
+      if: ${{ always() }}
+      uses: actions/upload-artifact@v2
+      with:
+        name: JEXEC-logs
+        path: ./joomla_v4/translations/package/logs
